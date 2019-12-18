@@ -47,6 +47,9 @@ int limit;
 int cur_row;
 int cur_col;
 
+int stage=1;
+
+int pallete[3][5][3];
 int play();
 void* show_timer(void* m);
 void draw_start(char* start_name);
@@ -63,11 +66,18 @@ int main(){
 	curs_set(0);
 
 	start_color();
-	init_color(COLOR_MAGENTA, 46*4, 8*4, 35*4);
 	init_pair(1,COLOR_RED,COLOR_WHITE);
 	init_pair(2,COLOR_RED,COLOR_BLACK);
 	init_pair(3,COLOR_WHITE,COLOR_BLACK);
-	init_pair(4,COLOR_WHITE,COLOR_YELLOW);
+
+	// gradation 색상정보를 가져온다.
+	// gradation.txt는 5개의 레벨을 가진 색상조합 3개가 합쳐진 형태이다.
+	// 색상의 format은 RGB를 사용한다.
+	FILE* fp=fopen("gradation.txt","r");
+	for(int i=0;i<3;i++)
+		for(int j=0;j<5;j++)
+			fscanf(fp,"rgb(%d,%d,%d)\n",&pallete[i][j][0],&pallete[i][j][1],&pallete[i][j][2]);
+	fclose(fp);
 
 	draw_start("start.txt");
 	if(getchar()=='q'){
@@ -80,6 +90,7 @@ int main(){
 		clear();
 		draw_field("field.txt");
 		draw_map(map_list[i]);
+
 		result=play();
 
 	//game over
@@ -106,6 +117,7 @@ int main(){
 			break;
 		}
 		addstr("go to next stage");
+		stage++;
 		refresh();
 		sleep(3);
 	}
@@ -186,12 +198,11 @@ void draw_start(char* start_name){
 		exit(1);
 	}
 
-	for(int i=0;i<ROW;i++){
-		fgets(start[i],COL+2,fp);
-		move(i+MROW+OFFSET_ROW,0+MCOL+OFFSET_COL);
-		for(int j=0;j<COL;j++)
-			addch(start[i][j]);
-	}
+	for(int i=0;i<fROW;i++){
+		fgets(start[i],fCOL,fp);
+		move(i+OFFSET_ROW,0+OFFSET_COL);
+		addstr(start[i]);
+		}
 	refresh();
 	fclose(fp);
 }
@@ -206,6 +217,7 @@ int play(){
 	pthread_t t1;
 
 	int dir;
+	int pair=4,index=10,offset=0, increase=1;
 
 	attron(COLOR_PAIR(3));
 	move(cur_row,cur_col);
@@ -213,6 +225,7 @@ int play(){
 	refresh();
 
 	pthread_create(&t1,NULL,show_timer,NULL);
+
 
 	while((input=getch())!='q'){
 
@@ -230,20 +243,40 @@ int play(){
 			limit-=PENALTY; //시간 깎기
 			continue;
 		}
-		attron(COLOR_PAIR(4));
+
+		init_color(index,(pallete[stage-1][offset][0]-5)*4, (pallete[stage-1][offset][1]-5)*4, (pallete[stage-1][offset][2]-5)*4);
+		init_pair(pair,COLOR_WHITE,index++);
+
+		attron(COLOR_PAIR(pair));
 		move(cur_row,cur_col);
 		addch(BLANK);
 		cur_row+=direction[dir][0];
 		cur_col+=direction[dir][1];
 		move(cur_row,cur_col);
 		addch(STAR);
-		attroff(COLOR_PAIR(4));
+		attroff(COLOR_PAIR(pair));
 		arr_row=cur_row-(OFFSET_ROW+MROW);
 		arr_col=cur_col-(OFFSET_COL+MCOL);
 
 		if(miro[arr_row][arr_col]==TREASURE) return 1;
 		if(limit<=0)return 0; //game over
 		refresh();
+
+		// color level change
+		// 0->1->2->3->4->3->2->1->0
+		if(increase) offset++;
+		else offset--;
+
+		if(offset==5) {
+			increase=0;
+			offset=3;
+		}
+		else if(offset==-1) {
+			increase=2	;
+			offset++;
+		}
+		pair++;
+
 	}
 	return 2; //quit
 }
