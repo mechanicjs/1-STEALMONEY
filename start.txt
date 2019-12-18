@@ -1,0 +1,16 @@
+$$$$$$$$$$$$$$$$$$$$$$$$
+$                      $
+$                      $
+$    -------------     $
+$     steal money      $
+$    -------------     $
+$                      $
+$  < press any key >   $
+$     for start        $
+$   exit : press 'q'   $
+$                      $
+$                      $
+$   system programing  $
+$    team 1 project    $
+$$$$$$$$$$$$$$$$$$$$$$$$
+
